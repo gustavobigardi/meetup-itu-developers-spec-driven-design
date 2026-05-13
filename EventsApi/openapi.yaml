@@ -1,0 +1,504 @@
+openapi: 3.0.3
+info:
+  title: Meetup Events API
+  description: |
+    API para gerenciamento de eventos de meetup e ingressos.
+
+    ## Estado atual da implementação
+    | Endpoint | Status |
+    |---|---|
+    | `GET /events` | ✅ Implementado |
+    | `POST /events` | ✅ Implementado |
+    | `GET /events/{id}` | ✅ Implementado |
+    | `PUT /events/{id}` | ✅ Implementado |
+    | `DELETE /events/{id}` | ✅ Implementado |
+    | `GET /events/{id}/tickets` | 🔜 Especificado — aguardando implementação |
+    | `POST /events/{id}/tickets` | 🔜 Especificado — aguardando implementação |
+
+    > **Spec Driven Design**: Os endpoints de tickets já estão especificados aqui.
+    > A implementação C# será gerada a seguir usando GitHub Copilot.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:5000
+    description: Desenvolvimento local
+
+tags:
+  - name: events
+    description: Gerenciamento de eventos de meetup
+  - name: tickets
+    description: Gerenciamento de ingressos *(implementação pendente)*
+
+paths:
+
+  # =============================================
+  # EVENTS — ✅ Implementado
+  # =============================================
+
+  /events:
+    get:
+      tags: [events]
+      summary: Lista todos os eventos
+      operationId: listEvents
+      parameters:
+        - name: status
+          in: query
+          description: Filtrar por status do evento
+          required: false
+          schema:
+            $ref: '#/components/schemas/EventStatus'
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            example: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            example: 20
+      responses:
+        '200':
+          description: Lista de eventos retornada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, total, page, pageSize]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Event'
+                  total:
+                    type: integer
+                    example: 4
+                  page:
+                    type: integer
+                    example: 1
+                  pageSize:
+                    type: integer
+                    example: 20
+              example:
+                data:
+                  - id: "evt-001"
+                    name: "Meetup ITU Developers — Spec Driven Design"
+                    description: "Palestra sobre como usar specs OpenAPI para guiar o desenvolvimento"
+                    date: "2025-05-15T19:00:00-03:00"
+                    location: "Centro de Convenções de Ituiutaba"
+                    capacity: 100
+                    availableSpots: 37
+                    ticketPrice: 0.00
+                    status: "published"
+                    createdAt: "2025-04-01T10:00:00-03:00"
+                total: 4
+                page: 1
+                pageSize: 20
+
+    post:
+      tags: [events]
+      summary: Cria um novo evento
+      operationId: createEvent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+            example:
+              name: "Meetup ITU Developers — Próxima Edição"
+              description: "Mais uma edição do meetup de devs de Ituiutaba!"
+              date: "2025-09-18T19:00:00-03:00"
+              location: "Centro de Convenções de Ituiutaba"
+              capacity: 120
+              ticketPrice: 0.00
+      responses:
+        '201':
+          description: Evento criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /events/{eventId}:
+    parameters:
+      - name: eventId
+        in: path
+        required: true
+        description: Identificador único do evento
+        schema:
+          type: string
+          example: "evt-001"
+
+    get:
+      tags: [events]
+      summary: Busca um evento por ID
+      operationId: getEventById
+      responses:
+        '200':
+          description: Evento encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [events]
+      summary: Atualiza um evento
+      operationId: updateEvent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventRequest'
+            example:
+              status: "published"
+              capacity: 120
+      responses:
+        '200':
+          description: Evento atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [events]
+      summary: Cancela um evento
+      operationId: cancelEvent
+      description: Define o status do evento como `cancelled`. Não exclui permanentemente.
+      responses:
+        '204':
+          description: Evento cancelado com sucesso
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # =============================================
+  # TICKETS — 🔜 Especificado, aguardando implementação
+  # =============================================
+
+  /events/{eventId}/tickets:
+    parameters:
+      - name: eventId
+        in: path
+        required: true
+        description: Identificador único do evento
+        schema:
+          type: string
+          example: "evt-001"
+
+    get:
+      tags: [tickets]
+      summary: Lista os ingressos de um evento
+      operationId: listEventTickets
+      description: Retorna todos os ingressos adquiridos para o evento especificado.
+      responses:
+        '200':
+          description: Lista de ingressos retornada com sucesso
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ticket'
+              example:
+                - id: "tkt-001"
+                  eventId: "evt-001"
+                  buyerName: "João Silva"
+                  buyerEmail: "joao.silva@email.com"
+                  purchaseDate: "2025-05-01T14:30:00-03:00"
+                  status: "active"
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      tags: [tickets]
+      summary: Adquire um ingresso para o evento
+      operationId: purchaseTicket
+      description: |
+        Registra a aquisição de um ingresso para o comprador.
+
+        **Regras de negócio:**
+        - O evento deve existir e estar com status `published`
+        - O evento deve ter `availableSpots > 0`
+        - Após a compra, `availableSpots` é decrementado em 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseTicketRequest'
+            example:
+              buyerName: "Maria Oliveira"
+              buyerEmail: "maria.oliveira@email.com"
+      responses:
+        '201':
+          description: Ingresso adquirido com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+              example:
+                id: "tkt-002"
+                eventId: "evt-001"
+                buyerName: "Maria Oliveira"
+                buyerEmail: "maria.oliveira@email.com"
+                purchaseDate: "2025-05-12T21:00:00-03:00"
+                status: "active"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Evento sem vagas disponíveis ou não publicado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "EVENT_SOLD_OUT"
+                message: "Não há vagas disponíveis para este evento"
+
+components:
+  schemas:
+
+    Event:
+      type: object
+      required: [id, name, date, location, capacity, availableSpots, ticketPrice, status, createdAt]
+      properties:
+        id:
+          type: string
+          description: Identificador único do evento
+          example: "evt-001"
+        name:
+          type: string
+          description: Nome do evento
+          minLength: 3
+          maxLength: 200
+          example: "Meetup ITU Developers — Spec Driven Design"
+        description:
+          type: string
+          description: Descrição detalhada do evento
+          maxLength: 2000
+          example: "Palestra sobre como usar specs OpenAPI para guiar o desenvolvimento com GitHub Copilot"
+        date:
+          type: string
+          format: date-time
+          description: Data e hora de início do evento (ISO 8601)
+          example: "2025-05-15T19:00:00-03:00"
+        location:
+          type: string
+          description: Local onde o evento será realizado
+          minLength: 3
+          maxLength: 300
+          example: "Centro de Convenções de Ituiutaba"
+        capacity:
+          type: integer
+          description: Capacidade total de participantes
+          minimum: 1
+          maximum: 100000
+          example: 100
+        availableSpots:
+          type: integer
+          description: Vagas ainda disponíveis para inscrição
+          minimum: 0
+          example: 37
+        ticketPrice:
+          type: number
+          format: float
+          description: Preço do ingresso em reais. Use 0.00 para eventos gratuitos.
+          minimum: 0
+          example: 0.00
+        status:
+          $ref: '#/components/schemas/EventStatus'
+        createdAt:
+          type: string
+          format: date-time
+          description: Data e hora de criação do registro
+          example: "2025-04-01T10:00:00-03:00"
+
+    EventStatus:
+      type: string
+      enum: [draft, published, cancelled]
+      description: |
+        Status do evento:
+        - `draft`: Rascunho — não visível ao público
+        - `published`: Publicado — aceitando inscrições
+        - `cancelled`: Cancelado — não aceita novas inscrições
+      example: "published"
+
+    CreateEventRequest:
+      type: object
+      required: [name, date, location, capacity, ticketPrice]
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 200
+          example: "Meetup ITU Developers — Próxima Edição"
+        description:
+          type: string
+          maxLength: 2000
+          example: "Mais uma edição do meetup de devs de Ituiutaba!"
+        date:
+          type: string
+          format: date-time
+          example: "2025-09-18T19:00:00-03:00"
+        location:
+          type: string
+          minLength: 3
+          maxLength: 300
+          example: "Centro de Convenções de Ituiutaba"
+        capacity:
+          type: integer
+          minimum: 1
+          maximum: 100000
+          example: 120
+        ticketPrice:
+          type: number
+          format: float
+          minimum: 0
+          example: 0.00
+
+    UpdateEventRequest:
+      type: object
+      description: Todos os campos são opcionais — apenas os campos enviados são atualizados.
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 2000
+        date:
+          type: string
+          format: date-time
+        location:
+          type: string
+          minLength: 3
+          maxLength: 300
+        capacity:
+          type: integer
+          minimum: 1
+          maximum: 100000
+        ticketPrice:
+          type: number
+          format: float
+          minimum: 0
+        status:
+          $ref: '#/components/schemas/EventStatus'
+
+    Ticket:
+      type: object
+      required: [id, eventId, buyerName, buyerEmail, purchaseDate, status]
+      properties:
+        id:
+          type: string
+          description: Identificador único do ingresso
+          example: "tkt-001"
+        eventId:
+          type: string
+          description: ID do evento ao qual o ingresso pertence
+          example: "evt-001"
+        buyerName:
+          type: string
+          description: Nome completo do comprador
+          example: "João Silva"
+        buyerEmail:
+          type: string
+          format: email
+          description: Email do comprador
+          example: "joao.silva@email.com"
+        purchaseDate:
+          type: string
+          format: date-time
+          description: Data e hora da aquisição do ingresso
+          example: "2025-05-01T14:30:00-03:00"
+        status:
+          type: string
+          enum: [active, cancelled]
+          description: Status do ingresso
+          example: "active"
+
+    PurchaseTicketRequest:
+      type: object
+      required: [buyerName, buyerEmail]
+      properties:
+        buyerName:
+          type: string
+          minLength: 2
+          maxLength: 200
+          description: Nome completo do comprador
+          example: "Maria Oliveira"
+        buyerEmail:
+          type: string
+          format: email
+          description: Email para envio da confirmação
+          example: "maria.oliveira@email.com"
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Código identificador do erro
+          example: "NOT_FOUND"
+        message:
+          type: string
+          description: Mensagem de erro legível
+          example: "Evento não encontrado"
+        details:
+          type: array
+          description: Detalhes de validação (para erros 400)
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field:
+                type: string
+                example: "name"
+              message:
+                type: string
+                example: "O campo é obrigatório"
+
+  responses:
+    BadRequest:
+      description: Dados inválidos na requisição
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: "VALIDATION_ERROR"
+            message: "Dados inválidos na requisição"
+            details:
+              - field: "name"
+                message: "O campo é obrigatório"
+
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: "NOT_FOUND"
+            message: "Evento não encontrado"

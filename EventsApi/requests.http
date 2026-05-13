@@ -1,0 +1,116 @@
+### Meetup Events API — Requests para a Demo
+### Extensão VS Code: REST Client (humao.rest-client)
+
+@baseUrl = http://localhost:5000
+
+# ==========================================
+# EVENTS — Já implementado ✅
+# ==========================================
+
+### 1. Listar todos os eventos
+GET {{baseUrl}}/events
+Accept: application/json
+
+###
+
+### 2. Listar eventos publicados
+GET {{baseUrl}}/events?status=published
+Accept: application/json
+
+###
+
+### 3. Buscar evento por ID (existe)
+GET {{baseUrl}}/events/evt-001
+Accept: application/json
+
+###
+
+### 4. Buscar evento por ID (não existe — retorna 404)
+GET {{baseUrl}}/events/nao-existe
+Accept: application/json
+
+###
+
+### 5. Criar novo evento
+POST {{baseUrl}}/events
+Content-Type: application/json
+
+{
+  "name": "Meetup ITU Developers — Próxima Edição",
+  "description": "Mais uma edição do meetup de devs de Ituiutaba!",
+  "date": "2025-09-18T19:00:00-03:00",
+  "location": "Centro de Convenções de Ituiutaba",
+  "capacity": 120,
+  "ticketPrice": 0.00
+}
+
+###
+
+### 6. Criar evento com dados inválidos (retorna 400 com detalhes)
+POST {{baseUrl}}/events
+Content-Type: application/json
+
+{
+  "name": "AB",
+  "capacity": -5,
+  "ticketPrice": -10
+}
+
+###
+
+### 7. Atualizar evento — publicar o evento draft
+PUT {{baseUrl}}/events/evt-003
+Content-Type: application/json
+
+{
+  "status": "published"
+}
+
+###
+
+### 8. Cancelar evento
+DELETE {{baseUrl}}/events/evt-003
+Accept: application/json
+
+###
+
+# ==========================================
+# TICKETS — Será implementado ao vivo 🔜
+# ==========================================
+
+### 9. Listar ingressos de um evento
+GET {{baseUrl}}/events/evt-001/tickets
+Accept: application/json
+
+###
+
+### 10. Comprar ingresso para evento com vagas (evt-001: 37 vagas)
+POST {{baseUrl}}/events/evt-001/tickets
+Content-Type: application/json
+
+{
+  "buyerName": "Maria Oliveira",
+  "buyerEmail": "maria.oliveira@email.com"
+}
+
+###
+
+### 11. Comprar ingresso para evento sem vagas (evt-004: 0 vagas — retorna 409)
+POST {{baseUrl}}/events/evt-004/tickets
+Content-Type: application/json
+
+{
+  "buyerName": "Carlos Santos",
+  "buyerEmail": "carlos.santos@email.com"
+}
+
+###
+
+### 12. Comprar ingresso para evento que não existe (retorna 404)
+POST {{baseUrl}}/events/nao-existe/tickets
+Content-Type: application/json
+
+{
+  "buyerName": "Ana Lima",
+  "buyerEmail": "ana.lima@email.com"
+}
