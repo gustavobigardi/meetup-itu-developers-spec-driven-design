@@ -1,97 +1,156 @@
-# Demo — Meetup Events API
+# Meetup Events API — Spec Driven Design
 
-> **Contexto**: Demo ao vivo da palestra "Spec Driven Design" — Meetup ITU Developers  
-> **Stack**: C# .NET 10 · VS Code · GitHub Copilot (GPT-5 mini)  
+> Material da demo ao vivo da palestra **"Spec Driven Design"** — Meetup ITU Developers  
+> **Stack**: C# · .NET 10 · VS Code · GitHub Copilot  
 > **Duração da demo**: ~20 minutos
 
 ---
 
-## Estrutura do Projeto
+## O que é este repositório?
+
+Este projeto demonstra o conceito de **Spec Driven Design** (desenvolvimento guiado pela especificação):
+
+> **A ideia central**: antes de escrever qualquer linha de código, você define o contrato da API em um arquivo `openapi.yaml`. Esse arquivo é a "lei" do projeto — todo o código gerado deve segui-lo.
+
+O repositório já vem com uma API de eventos de meetup parcialmente pronta. O desafio da demo é implementar ao vivo a parte de **ingressos (tickets)**, usando o GitHub Copilot como assistente — e mostrando que, com a spec aberta, o Copilot gera código que já respeita os contratos definidos.
+
+---
+
+## O que tem aqui
 
 ```
-demo/
-└── EventsApi/                  # Projeto .NET já funcional
-    ├── .github/
-    │   └── copilot-instructions.md   # Copilot sempre referencia a spec
-    ├── Controllers/
-    │   └── EventsController.cs       # CRUD de eventos — já implementado ✅
-    ├── Data/
-    │   ├── AppDbContext.cs
-    │   └── DatabaseSeeder.cs         # 4 eventos realistas no seed
-    ├── DTOs/                         # Request/Response objects
-    ├── Models/                       # Entidades EF Core
-    ├── Services/
-    │   ├── IEventsService.cs         # ✅ implementado
-    │   └── EventsService.cs          # ✅ implementado
-    ├── openapi.yaml                  # Spec: Events ✅  Tickets 🔜
-    └── requests.http                 # Requisições para VS Code REST Client
+meetup-itu-developers-spec-driven-design/
+├── EventsApi/                          # Projeto .NET da API
+│   ├── .github/
+│   │   └── copilot-instructions.md    # Instrui o Copilot a sempre seguir a spec
+│   ├── Controllers/
+│   │   └── EventsController.cs        # Endpoints de eventos — já prontos ✅
+│   ├── Data/
+│   │   ├── AppDbContext.cs            # Banco de dados em memória (EF Core)
+│   │   └── DatabaseSeeder.cs         # 4 eventos de exemplo pré-carregados
+│   ├── DTOs/                          # Objetos de request/response
+│   ├── Models/                        # Entidades do banco de dados
+│   ├── Services/
+│   │   ├── IEventsService.cs          # Interface do serviço de eventos ✅
+│   │   └── EventsService.cs           # Implementação do serviço de eventos ✅
+│   ├── openapi.yaml                   # 📋 A spec — fonte da verdade do projeto
+│   └── requests.http                  # Requisições prontas para testar no VS Code
+└── Slides.pdf                         # Slides da palestra
 ```
+
+### O que já está implementado
+
+| Endpoint | O que faz | Status |
+|---|---|---|
+| `GET /events` | Lista todos os eventos | ✅ Pronto |
+| `POST /events` | Cria um novo evento | ✅ Pronto |
+| `GET /events/{id}` | Busca um evento pelo ID | ✅ Pronto |
+| `PUT /events/{id}` | Atualiza um evento | ✅ Pronto |
+| `DELETE /events/{id}` | Cancela um evento | ✅ Pronto |
+| `GET /events/{id}/tickets` | Lista ingressos do evento | 🔜 Será feito na demo |
+| `POST /events/{id}/tickets` | Compra um ingresso | 🔜 Será feito na demo |
+
+### Dados de exemplo (já carregados)
+
+| ID | Evento | Status | Vagas disponíveis | Preço |
+|---|---|---|---|---|
+| `evt-001` | Meetup ITU — Spec Driven Design | publicado | 37 de 100 | Gratuito |
+| `evt-002` | Workshop Clean Architecture | publicado | 15 de 40 | R$ 50 |
+| `evt-003` | Tech Talk: IA no Cotidiano | **rascunho** | 60 de 60 | Gratuito |
+| `evt-004` | Hackathon ITU Dev 2025 | publicado | **0 de 80** | R$ 30 |
+
+> 💡 O `evt-004` com 0 vagas é proposital — serve para demonstrar o erro `409 SOLD_OUT` na demo.  
+> 💡 O `evt-003` em rascunho serve para demonstrar a atualização de status com `PUT`.
 
 ---
 
 ## Pré-requisitos
 
-```bash
-# Verificar .NET
-dotnet --version   # 10.x ou superior
+Antes de começar, instale e configure:
 
-# VS Code — Extensões necessárias:
-# - GitHub Copilot + GitHub Copilot Chat
-# - REST Client (humao.rest-client)
-# - YAML (by Red Hat)
+**1. .NET 10**
+```bash
+dotnet --version   # deve aparecer 10.x.x
 ```
+Não tem? Baixe em: https://dotnet.microsoft.com/download
+
+**2. VS Code com as extensões abaixo:**
+- **GitHub Copilot** + **GitHub Copilot Chat** — o assistente de IA
+- **REST Client** (`humao.rest-client`) — para executar os arquivos `.http`
+- **YAML** (by Red Hat) — para editar o `openapi.yaml` com destaque de sintaxe
+
+**3. Conta GitHub com acesso ao Copilot**  
+Verifique no VS Code: `Ctrl+Shift+P` → `GitHub Copilot: Sign In`
 
 ---
 
-## Roteiro da Demo (20 min)
-
-### Fase 0 — Mostrar a API rodando (2 min)
+## Como rodar o projeto
 
 ```bash
-cd demo/EventsApi
+# 1. Entre na pasta do projeto
+cd EventsApi
+
+# 2. Inicie a API
 dotnet run
 ```
 
-Abra `requests.http` no VS Code e execute:
-- **Request #1** — `GET /events` → retorna 4 eventos do seed
-- **Request #3** — `GET /events/evt-001` → detalhe do Meetup SDD
-- **Request #6** — `POST /events` com dados inválidos → `400 VALIDATION_ERROR`
+A API estará disponível em `http://localhost:5000`.
 
-> 💬 **Fala**: "A API já existe, já está rodando, já tem eventos reais. O CRUD de eventos está 100% implementado. Mas olha o que está na spec..."
+Para testar, abra o arquivo `EventsApi/requests.http` no VS Code e clique em **"Send Request"** acima de qualquer requisição.
 
 ---
 
-### Fase 1 — Mostrar a spec e o gap (5 min)
+## Passo a passo da demo
 
-Abra `openapi.yaml`. Aponte para o cabeçalho da spec:
+> 🎯 **Objetivo da demo**: mostrar que, com a spec definida antes do código, o Copilot consegue implementar novos endpoints com muito menos esforço — e já respeitando todos os contratos documentados.
+
+---
+
+### Etapa 0 — Ver a API funcionando (2 min)
+
+Com a API rodando (`dotnet run`), abra `requests.http` e execute:
+
+- **Requisição #1** → `GET /events` — retorna os 4 eventos do banco
+- **Requisição #3** → `GET /events/evt-001` — detalhe do Meetup SDD
+- **Requisição #6** → `POST /events` com dados inválidos — retorna `400 VALIDATION_ERROR`
+
+> 💬 *"A API já existe, já está rodando, já tem dados reais. O CRUD de eventos está 100% pronto. Mas olha o que a spec já define..."*
+
+---
+
+### Etapa 1 — Ver a spec e o gap (5 min)
+
+Abra o arquivo `EventsApi/openapi.yaml` no VS Code. Role até a seção de tickets:
 
 ```yaml
-# ============================================================
-# STATUS DOS ENDPOINTS
-# ============================================================
-# Events  (GET/POST /events, GET/PUT/DELETE /events/{id}) ✅
-# Tickets (GET/POST /events/{eventId}/tickets)            🔜
-# ============================================================
+# =============================================
+# TICKETS — 🔜 Especificado, aguardando implementação
+# =============================================
+/events/{eventId}/tickets:
 ```
 
-> 💬 **Fala**: "Olha aqui — tickets já estão **na spec**. O contrato foi definido primeiro. Os schemas, os status codes, os exemplos, as validações — tudo documentado. Mas o código ainda não existe."
+> 💬 *"Os endpoints de tickets já estão documentados aqui — os campos, as validações, os status codes de erro, tudo. O contrato existe. O código é que ainda não existe."*
 
-Clique no Request #9 do `requests.http`:
-```http
+Agora execute a **Requisição #9** do `requests.http`:
+```
 GET http://localhost:5000/events/evt-001/tickets
 ```
 
-Recebe `404` (rota não existe). **É exatamente o que esperamos** — a spec foi à frente do código.
+Resultado: `404 Not Found`. A rota não existe no código — mas já está na spec. **Isso é exatamente o ponto.**
 
 ---
 
-### Fase 2 — Implementar tickets com Copilot (13 min)
+### Etapa 2 — Implementar tickets com o Copilot (13 min)
 
-**Deixe `openapi.yaml` aberto em uma aba.** O Copilot vai usá-lo automaticamente via *neighboring tabs*.
+> ⚠️ **Importante**: antes de começar, deixe o arquivo `openapi.yaml` aberto em uma aba do VS Code. O Copilot lê todos os arquivos abertos para montar o contexto — com a spec visível, ele vai gerar código que já segue os contratos definidos.
 
-#### Passo 1 — DTOs (2 min)
+---
 
-No Copilot Chat:
+#### Passo 1 — Criar os DTOs (2 min)
+
+DTOs (Data Transfer Objects) são os objetos que representam os dados de entrada e saída da API. Vamos criar dois: um para representar um ingresso na resposta, e outro para representar os dados de quem está comprando.
+
+No **Copilot Chat**, cole o prompt:
 
 ```
 Baseado na spec openapi.yaml aberta, crie os DTOs para os endpoints de tickets:
@@ -101,7 +160,11 @@ Baseado na spec openapi.yaml aberta, crie os DTOs para os endpoints de tickets:
 Siga exatamente os nomes de campos e constraints da spec.
 ```
 
-#### Passo 2 — Service (4 min)
+---
+
+#### Passo 2 — Criar o Service (4 min)
+
+O Service é a camada que contém a lógica de negócio — validações, regras, acesso ao banco. No Copilot Chat:
 
 ```
 Crie a interface ITicketsService e a implementação TicketsService em Services/.
@@ -116,260 +179,75 @@ Operações necessárias (baseadas nos endpoints da spec):
 Use o AppDbContext via injeção de dependência, como EventsService faz.
 ```
 
-#### Passo 3 — Controller (4 min)
+---
+
+#### Passo 3 — Criar o Controller (4 min)
+
+O Controller é a camada que recebe as requisições HTTP e chama o Service. No Copilot Chat:
 
 ```
 Crie Controllers/TicketsController.cs com os dois endpoints de tickets da spec:
 
-- GET /events/{eventId}/tickets → operationId: listTickets
+- GET /events/{eventId}/tickets → operationId: listEventTickets
   - 200: lista de tickets
   - 404: evento não encontrado (ErrorResponse com code NOT_FOUND)
 
 - POST /events/{eventId}/tickets → operationId: purchaseTicket
   - 201: ingresso criado
   - 404: evento não encontrado
-  - 409: sem vagas (ErrorResponse com code SOLD_OUT)
+  - 409: sem vagas (ErrorResponse com code EVENT_SOLD_OUT)
 
 Injete ITicketsService no construtor (primary constructor).
 ```
 
-#### Passo 4 — Registrar no Program.cs (1 min)
+---
+
+#### Passo 4 — Registrar o Service (1 min)
+
+Para que o .NET saiba como criar o `TicketsService` quando o controller precisar, precisamos registrá-lo. No Copilot Chat:
 
 ```
 No Program.cs, adicione o registro do ITicketsService:
 builder.Services.AddScoped<ITicketsService, TicketsService>();
 ```
 
-#### Passo 5 — Testar (2 min)
+---
 
-Reinicie a API e use `requests.http`:
+#### Passo 5 — Testar tudo (2 min)
 
-- **Request #9** — `GET /events/evt-001/tickets` → `200` (lista vazia)
-- **Request #10** — `POST /events/evt-001/tickets` → `201` (ingresso criado)
-- **Request #11** — `POST /events/evt-004/tickets` → `409 SOLD_OUT` 🎯
+Pare e reinicie a API (`Ctrl+C` e `dotnet run`), depois teste com `requests.http`:
 
-> 💬 **Fala**: "Veja — o evt-004 é o Hackathon com 0 vagas. A spec documentava esse caso, implementamos o tratamento, e o comportamento é exatamente o que foi especificado."
+| Requisição | Endpoint | Resultado esperado |
+|---|---|---|
+| #9 | `GET /events/evt-001/tickets` | `200` — lista vazia |
+| #10 | `POST /events/evt-001/tickets` | `201` — ingresso criado |
+| #11 | `POST /events/evt-004/tickets` | `409 EVENT_SOLD_OUT` 🎯 |
+| #12 | `POST /events/nao-existe/tickets` | `404 NOT_FOUND` |
+
+> 💬 *"O `evt-004` é o Hackathon com 0 vagas. A spec documentava esse caso, implementamos a regra, e o retorno é exatamente o que foi especificado. O contrato funcionou."*
 
 ---
 
-## Dados do Seed
+## Conceitos-chave da demo
 
-| ID | Evento | Status | Vagas | Preço |
-|---|---|---|---|---|
-| `evt-001` | Meetup ITU — Spec Driven Design | published | 37/100 | Gratuito |
-| `evt-002` | Workshop Clean Architecture | published | 15/40 | R$ 50 |
-| `evt-003` | Tech Talk: IA no Cotidiano | **draft** | 60/60 | Gratuito |
-| `evt-004` | Hackathon ITU Dev 2025 | published | **0/80** | R$ 30 |
-
-> `evt-004` com 0 vagas = cenário perfeito para demonstrar o `409 Conflict`  
-> `evt-003` com status draft = cenário para o `PUT /events/evt-003` publicar o evento
-
----
-
-## Fallback (se algo der errado)
-
-Se a implementação ao vivo travar:
-
-```bash
-# O arquivo openapi.yaml de referência completa está em:
-demo/openapi.yaml
-
-# Você pode mostrar o código pronto "abrindo" arquivos que já preparou.
-# Mantenha uma branch/commit com a implementação completa como backup.
-```
-
-
-Antes de iniciar, confirme que está tudo instalado:
-
-```bash
-# Verificar .NET
-dotnet --version  # deve retornar 8.x ou superior
-
-# Verificar Node.js (para o mock server opcional)
-node --version
-
-# Copilot: verificar login no VS Code
-# Ctrl+Shift+P → "GitHub Copilot: Sign In"
-```
-
-**Extensões VS Code necessárias:**
-- GitHub Copilot
-- GitHub Copilot Chat
-- YAML (by Red Hat)
-- OpenAPI (Swagger) Editor
-
----
-
-## Fase 1 — Criando a Spec OpenAPI (8 min)
-
-### Passo 1: Criar a estrutura do projeto (1 min)
-
-```bash
-mkdir meetup-events-api && cd meetup-events-api
-mkdir .github
-touch openapi.yaml
-touch .github/copilot-instructions.md
-code .
-```
-
-### Passo 2: Criar o copilot-instructions.md (2 min)
-
-Abra `.github/copilot-instructions.md` e comece a digitar — o Copilot vai sugerir.
-
-Ou cole diretamente o conteúdo do arquivo `.github/copilot-instructions.md` desta pasta de demo.
-
-> 💡 **Dica para a apresentação**: Explique que este arquivo é lido automaticamente pelo Copilot em todos os chats do repositório. É como dar instruções permanentes para a IA.
-
-### Passo 3: Criar a spec OpenAPI (5 min)
-
-Abra `openapi.yaml` e comece digitando o cabeçalho:
-
-```yaml
-openapi: 3.0.3
-info:
-  title: Meetup Events API
-  description: API para gerenciamento de eventos de meetup e ingressos
-  version: 1.0.0
-```
-
-Em seguida, abra o **Copilot Chat** e use este prompt:
-
-```
-Preciso completar esta spec OpenAPI para uma API de gerenciamento de eventos de meetup.
-Use o arquivo openapi.yaml que está aberto.
-
-Crie os seguintes paths:
-- GET /events (com parâmetros de query: status, page, pageSize)
-- POST /events
-- GET /events/{eventId}
-- PUT /events/{eventId}
-- DELETE /events/{eventId}
-- GET /events/{eventId}/tickets
-- POST /events/{eventId}/tickets
-
-Crie os seguintes schemas em components/schemas:
-- Event (campos: id, name, description, date, location, capacity, availableSpots, ticketPrice, status, createdAt)
-- EventStatus (enum: draft, published, cancelled)
-- CreateEventRequest (campos obrigatórios: name, date, location, capacity, ticketPrice)
-- UpdateEventRequest (todos os campos opcionais)
-- Ticket (campos: id, eventId, buyerName, buyerEmail, purchaseDate, status)
-- PurchaseTicketRequest (campos: buyerName, buyerEmail)
-- Error (campos: code, message, details)
-
-Crie responses reutilizáveis: BadRequest (400), NotFound (404), UnprocessableEntity (422)
-
-Adicione exemplos realistas de meetup em todos os schemas.
-Adicione descriptions em todas as propriedades.
-Use $ref para referenciar schemas nas respostas.
-```
-
-> 💡 **Se algo der errado**: Use o arquivo `openapi-start.yaml` como ponto de partida e o `openapi.yaml` como referência do resultado final.
-
----
-
-## Fase 2 — Gerando Código C# .NET (12 min)
-
-### Passo 1: Criar o projeto .NET (2 min)
-
-```bash
-dotnet new webapi -n EventsApi --no-openapi
-cd EventsApi
-
-# Remover arquivos desnecessários
-rm Controllers/WeatherForecastController.cs
-rm WeatherForecast.cs
-```
-
-> 💡 **Por que `--no-openapi`?** Porque não queremos gerar a spec a partir do código (code-first). Nossa spec YAML **já existe** e é o ponto de partida (spec-first).
-
-### Passo 2: Abrir a spec ao lado do código (1 min)
-
-No VS Code:
-1. Arraste `openapi.yaml` para uma aba do lado
-2. O Copilot vai pegar o contexto automaticamente via **neighboring tabs**
-
-> 💡 **Explique para o público**: O Copilot lê todos os arquivos abertos no IDE para montar o contexto. Com a spec aberta, ele tem acesso a todos os tipos, constraints e nomes — sem precisar de nenhuma configuração extra.
-
-### Passo 3: Gerar os Models e DTOs (3 min)
-
-Abra o Copilot Chat e use este prompt:
-
-```
-Baseado no arquivo openapi.yaml que está aberto como aba no VS Code,
-crie os seguintes arquivos C# na pasta Models/:
-
-1. Event.cs — baseado no schema Event da spec
-2. Ticket.cs — baseado no schema Ticket da spec
-3. CreateEventRequest.cs — baseado no schema CreateEventRequest
-4. UpdateEventRequest.cs — baseado no schema UpdateEventRequest
-5. PurchaseTicketRequest.cs — baseado no schema PurchaseTicketRequest
-6. ErrorResponse.cs — baseado no schema Error (com lista de ErrorDetail)
-
-Requisitos:
-- Use DataAnnotations para validação (Required, MinLength, MaxLength, Range, EmailAddress, RegularExpression)
-- As constraints devem corresponder exatamente às definidas na spec (minLength, maxLength, minimum, maximum, format)
-- Use tipos C# apropriados: string, int, decimal, DateTime
-- Para o campo status do Event, crie um enum EventStatus com os valores da spec (Draft, Published, Cancelled)
-- Para o campo status do Ticket, crie um enum TicketStatus (Active, Cancelled)
-- Adicione comentários XML com as descriptions da spec
-```
-
-### Passo 4: Gerar o Controller de Eventos (4 min)
-
-```
-Baseado no arquivo openapi.yaml aberto, crie um arquivo Controllers/EventsController.cs
-que implemente todos os endpoints dos paths /events e /events/{eventId}.
-
-Requisitos:
-- Use os operationIds como nomes dos métodos: listEvents, createEvent, getEventById, updateEvent, cancelEvent
-- Retorne exatamente os status codes definidos na spec para cada endpoint
-- Use os Models criados nos arquivos da pasta Models/
-- Para o endpoint POST retorne 201 Created com o Location header
-- Para o DELETE retorne 204 No Content
-- Para erros 404, retorne o ErrorResponse com code "NOT_FOUND"
-- Valide o ModelState em todos os endpoints que recebem body e retorne 400 se inválido
-- Adicione comentários XML [summary] com o texto do campo summary de cada operação na spec
-- Por enquanto, use dados em memória (uma lista estática) como repositório
-```
-
-### Passo 5: Registrar no Program.cs (2 min)
-
-```
-Atualize o Program.cs para:
-1. Registrar os controllers com AddControllers()
-2. Configurar JSON para usar camelCase (JsonNamingPolicy.CamelCase)
-3. Mapear os controller routes com MapControllers()
-4. Remover qualquer referência ao WeatherForecast
-```
-
-### Passo 6: Testar (1 min)
-
-```bash
-dotnet run
-# Acesse http://localhost:5000/events no browser ou Postman
-```
-
----
-
-## Referências
-
-| Arquivo | Propósito |
+| Conceito | O que significa |
 |---|---|
-| `openapi.yaml` | Spec completa — estado final de referência |
-| `openapi-start.yaml` | Spec parcial — ponto de partida para a demo ao vivo |
-| `.github/copilot-instructions.md` | Instruções do Copilot |
+| **Spec Driven Design** | Escrever o contrato da API antes de qualquer código |
+| **openapi.yaml** | O arquivo que define todos os endpoints, campos e regras da API |
+| **operationId** | Nome único de cada endpoint na spec — vira o nome do método no código |
+| **DTO** | Objeto que representa os dados que entram ou saem da API |
+| **Service** | Camada que contém as regras de negócio |
+| **Controller** | Camada que recebe as requisições HTTP e responde ao cliente |
+| **neighboring tabs** | O Copilot lê os arquivos abertos no VS Code para montar o contexto |
 
-## Mock Server (bônus, se houver tempo)
+---
+
+## Se algo der errado durante a demo
 
 ```bash
-# Rodar um mock server diretamente da spec — sem escrever código!
-npx @stoplight/prism-cli mock openapi.yaml
+# Se o código travar, a spec completa está em:
+EventsApi/openapi.yaml
 
-# Testar o mock
-curl http://localhost:4010/events
-curl -X POST http://localhost:4010/events \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Meetup Teste", "date": "2025-12-01T19:00:00-03:00", "location": "Ituiutaba", "capacity": 50, "ticketPrice": 0}'
+# Mostre o arquivo openapi.yaml e explique o que deveria ter sido gerado.
+# Mantenha uma branch com a implementação completa como backup.
 ```
-
-> 💡 O Prism serve respostas com os dados dos `examples` da spec — sem nenhum backend implementado!
